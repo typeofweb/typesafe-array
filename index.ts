@@ -1,134 +1,171 @@
 const __type = Symbol("CustomArray");
 // type __Type = typeof __type;
 
-type Sizes = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type Zero = { readonly t: "Zero"; readonly p: never };
+const Zero: Zero = { t: "Zero", p: undefined as never };
 
-export type CustomArray<T = unknown, Size extends Sizes = Sizes> = {
-  [__type]: { t?: T; s: Size; elements: ReadonlyArray<T> };
+type Positive = { readonly t: "Positive"; readonly p: Peano };
+type Peano = Zero | Positive;
+
+type Succ<T extends Peano> = {
+  readonly t: "Positive";
+  readonly p: T;
 };
-
-type AdditionTable = {
-  0: 1;
-  1: 2;
-  2: 3;
-  3: 4;
-  4: 5;
-  5: 6;
-  6: never;
-};
-
-type SubtractionTable = {
-  0: never;
-  1: 0;
-  2: 1;
-  3: 2;
-  4: 3;
-  5: 4;
-  6: 5;
-};
-
-type ComparisonTable = {
-  0: {};
-  1: {
-    0: true;
-  };
-  2: {
-    0: true;
-    1: true;
-  };
-  3: {
-    0: true;
-    1: true;
-    2: true;
-  };
-  4: {
-    0: true;
-    1: true;
-    2: true;
-    3: true;
-  };
-  5: {
-    0: true;
-    1: true;
-    2: true;
-    3: true;
-    4: true;
-  };
-  6: {
-    0: true;
-    1: true;
-    2: true;
-    3: true;
-    4: true;
-    5: true;
+const Succ = <T extends Peano>(p: T): Succ<typeof p> => {
+  return {
+    t: "Positive",
+    p,
   };
 };
 
-type IncrementSize<Size extends Sizes> = AdditionTable[Size];
-type DecrementSize<Size extends Sizes> = SubtractionTable[Size];
+type Prev<T extends Peano> = T extends Positive ? T["p"] : never;
+const Prev = <T extends Peano>(t: T): Prev<T> =>
+  t.t === "Positive" ? (t.p as Prev<T>) : (undefined as never);
 
-type SizeIsLargerThanN<
-  Size extends Sizes,
-  N extends Sizes
-> = N extends keyof ComparisonTable[Size] ? true : false;
+type Add<A extends Peano, B extends Peano> = {
+  0: B;
+  otherwise: Add<Prev<A>, Succ<B>>;
+}[A extends Zero ? 0 : "otherwise"];
+const Add = <A extends Peano, B extends Peano>(a: A, b: B): Add<A, B> => {
+  if (a.t === "Zero") {
+    return (b as unknown) as Add<A, B>;
+  } else if (b.t === "Zero") {
+    return (a as unknown) as Add<A, B>;
+  } else {
+    return (Add(Prev(a), Succ(b)) as unknown) as Add<A, B>;
+  }
+};
+
+type Compare<A extends Peano, B extends Peano> = A extends Zero
+  ? B extends Zero
+    ? { EQ: true; GT: false; LT: false }
+    : { EQ: false; GT: false; LT: true }
+  : B extends Zero
+  ? { EQ: false; GT: true; LT: false }
+  : {
+      EQ: Compare<Prev<A>, Prev<B>>["EQ"];
+      GT: Compare<Prev<A>, Prev<B>>["GT"];
+      LT: Compare<Prev<A>, Prev<B>>["LT"];
+    };
+
+type GreaterThan<A extends Peano, B extends Peano> = Compare<A, B>["GT"];
+// type LessThan<A extends Peano, B extends Peano> = Compare<A, B>["LT"];
+// type EqualTo<A extends Peano, B extends Peano> = Compare<A, B>["EQ"];
+
+// type Subtract<A extends Peano, B extends Peano> = EqualTo<A, B> extends true
+//   ? Zero
+//   : LessThan<A, B> extends true
+//   ? never
+//   : B extends Zero
+//   ? A
+//   : { result: Subtract<Prev<A>, Prev<B>> }[A extends any ? "result" : never];
+
+const peanoToNumber = (p: Peano, count = 0): number => {
+  if (p.t === "Zero") {
+    return count;
+  } else {
+    return peanoToNumber(p.p, count + 1);
+  }
+};
+
+export const _0 = Zero;
+export const _1 = Succ(_0);
+export const _2 = Succ(_1);
+export const _3 = Succ(_2);
+export const _4 = Succ(_3);
+export const _5 = Succ(_4);
+export const _6 = Succ(_5);
+export const _7 = Succ(_6);
+export const _8 = Succ(_7);
+export const _9 = Succ(_8);
+export const _10 = Succ(_9);
+
+export function numberToPeano(n: 0, count?: Peano): typeof _0;
+export function numberToPeano(n: 1, count?: Peano): typeof _1;
+export function numberToPeano(n: 2, count?: Peano): typeof _2;
+export function numberToPeano(n: 3, count?: Peano): typeof _3;
+export function numberToPeano(n: 4, count?: Peano): typeof _4;
+export function numberToPeano(n: 5, count?: Peano): typeof _5;
+export function numberToPeano(n: 6, count?: Peano): typeof _6;
+export function numberToPeano(n: 7, count?: Peano): typeof _7;
+export function numberToPeano(n: 8, count?: Peano): typeof _8;
+export function numberToPeano(n: 9, count?: Peano): typeof _9;
+export function numberToPeano(n: 10, count?: Peano): typeof _10;
+export function numberToPeano(n: number, count?: Peano): never;
+export function numberToPeano(n: number, count: Peano = Zero): Peano {
+  if (n === 0) {
+    return count;
+  } else if (n < 0) {
+    throw Error();
+  } else {
+    const newS: Succ<typeof count> = {
+      t: "Positive",
+      p: count,
+    };
+    return numberToPeano(n - 1, newS);
+  }
+}
+
+numberToPeano(123);
+
+export type CustomArray<T = unknown, Size extends Peano = Peano> = {
+  [__type]: {
+    readonly t?: T;
+    readonly s: Size;
+    readonly elements: ReadonlyArray<T>;
+  };
+};
 
 type GetElementReturn<
   Arr extends CustomArray,
-  N extends Sizes
+  N extends Peano
 > = Arr extends CustomArray<infer T, infer Size>
-  ? SizeIsLargerThanN<Size, N> extends true
+  ? GreaterThan<Size, N> extends true
     ? T
     : undefined
   : never;
 
-type PopElementReturn<Arr extends CustomArray> = Arr extends CustomArray<
-  infer T,
-  infer Size
->
-  ? SizeIsLargerThanN<Size, 0> extends true
-    ? CustomArray<T, DecrementSize<Size>>
-    : never
-  : never;
-
-export function makeArray<T>(): CustomArray<T, 0> {
+export function makeArray<T>(): CustomArray<T, Zero> {
   return {
-    [__type]: { s: 0, elements: [] },
+    [__type]: { s: Zero, elements: [] },
   };
 }
 
-export function pushElement<T, Size extends Sizes>(
+export function pushElement<T, Size extends Peano>(
   element: T,
   arr: CustomArray<T, Size>
-): CustomArray<T, IncrementSize<Size>> {
+): CustomArray<T, Succ<Size>> {
   const { elements, s } = arr[__type];
+  const newS: Succ<Size> = {
+    t: "Positive",
+    p: s,
+  };
   return {
     [__type]: {
-      s: (s + 1) as IncrementSize<Size>,
+      s: newS,
       elements: [...elements, element],
     },
   };
 }
 
-export function popElement<T, Size extends Sizes>(
-  arr: Size extends 0 ? never : CustomArray<T, Size>
-): PopElementReturn<typeof arr> {
+export function popElement<T, Size extends Positive>(
+  arr: CustomArray<T, Size>
+): CustomArray<T, Prev<Size>> {
   const { elements, s } = arr[__type];
-  // @ts-expect-error
-  if (s === 0) {
-    return undefined as never;
-  }
 
   return {
     [__type]: {
-      s: (s + 1) as DecrementSize<Size>,
+      s: s.p as Prev<Size>,
       elements: elements.slice(0, -1),
     },
-  } as PopElementReturn<typeof arr>;
+  };
 }
 
-export function getElement<T, N extends Sizes, Size extends Sizes>(
-  n: N,
-  arr: SizeIsLargerThanN<Size, N> extends true ? CustomArray<T, Size> : never
+export function getElement<T, N extends Peano, Size extends Peano>(
+  N: N,
+  arr: GreaterThan<Size, N> extends true ? CustomArray<T, Size> : never
 ): GetElementReturn<typeof arr, N> {
+  const n = peanoToNumber(N);
   return arr[__type].elements[n] as GetElementReturn<typeof arr, N>;
 }
+
