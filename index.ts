@@ -3,102 +3,91 @@ const __type = Symbol("CustomArray");
 
 type Sizes = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export type CustomArray<
-  T = unknown,
-  Size extends Sizes = Sizes
-> = {
-  [__type]: { t?: T; s: Size; elements: Array<T> };
+export type CustomArray<T = unknown, Size extends Sizes = Sizes> = {
+  [__type]: { t?: T; s: Size; elements: ReadonlyArray<T> };
 };
 
-type IncrementSize<
-  Size extends Sizes
-> = Size extends 0
-  ? 1
-  : Size extends 1
-  ? 2
-  : Size extends 2
-  ? 3
-  : Size extends 3
-  ? 4
-  : Size extends 4
-  ? 5
-  : Size extends 5
-  ? 6
-  : never;
-type DecrementSize<
-  Size extends Sizes
-> = Size extends 0
-  ? never
-  : Size extends 1
-  ? 0
-  : Size extends 2
-  ? 1
-  : Size extends 3
-  ? 2
-  : Size extends 4
-  ? 3
-  : Size extends 5
-  ? 4
-  : Size extends 6
-  ? 5
-  : never;
+type AdditionTable = {
+  0: 1;
+  1: 2;
+  2: 3;
+  3: 4;
+  4: 5;
+  5: 6;
+  6: never;
+};
 
-type SizeHasN<
+type SubtractionTable = {
+  0: never;
+  1: 0;
+  2: 1;
+  3: 2;
+  4: 3;
+  5: 4;
+  6: 5;
+};
+
+type ComparisonTable = {
+  0: {};
+  1: {
+    0: true;
+  };
+  2: {
+    0: true;
+    1: true;
+  };
+  3: {
+    0: true;
+    1: true;
+    2: true;
+  };
+  4: {
+    0: true;
+    1: true;
+    2: true;
+    3: true;
+  };
+  5: {
+    0: true;
+    1: true;
+    2: true;
+    3: true;
+    4: true;
+  };
+  6: {
+    0: true;
+    1: true;
+    2: true;
+    3: true;
+    4: true;
+    5: true;
+  };
+};
+
+type IncrementSize<Size extends Sizes> = AdditionTable[Size];
+type DecrementSize<Size extends Sizes> = SubtractionTable[Size];
+
+type SizeIsLargerThanN<
   Size extends Sizes,
   N extends Sizes
-> = Size extends 0
-  ? false
-  : Size extends 1
-  ? N extends 0
-    ? true
-    : false
-  : Size extends 2
-  ? N extends 1
-    ? true
-    : {
-        0: SizeHasN<DecrementSize<Size>, N>;
-      }[N extends any ? 0 : never]
-  : Size extends 3
-  ? N extends 2
-    ? true
-    : {
-        0: SizeHasN<DecrementSize<Size>, N>;
-      }[N extends any ? 0 : never]
-  : Size extends 4
-  ? N extends 3
-    ? true
-    : {
-        0: SizeHasN<DecrementSize<Size>, N>;
-      }[N extends any ? 0 : never]
-  : Size extends 5
-  ? N extends 4
-    ? true
-    : {
-        0: SizeHasN<DecrementSize<Size>, N>;
-      }[N extends any ? 0 : never]
-  : Size extends 6
-  ? N extends 5
-    ? true
-    : {
-        0: SizeHasN<DecrementSize<Size>, N>;
-      }[N extends any ? 0 : never]
-  : never;
+> = N extends keyof ComparisonTable[Size] ? true : false;
 
 type GetElementReturn<
   Arr extends CustomArray,
   N extends Sizes
 > = Arr extends CustomArray<infer T, infer Size>
-  ? SizeHasN<Size, N> extends true
+  ? SizeIsLargerThanN<Size, N> extends true
     ? T
     : undefined
   : never;
 
-type PopElementReturn<
-  Arr extends CustomArray
-> = Arr extends CustomArray<infer T, infer Size>
-  ? SizeHasN<Size, 0> extends true
-    ? CustomArray<T, DecrementSize<Size>> :
-    never
+type PopElementReturn<Arr extends CustomArray> = Arr extends CustomArray<
+  infer T,
+  infer Size
+>
+  ? SizeIsLargerThanN<Size, 0> extends true
+    ? CustomArray<T, DecrementSize<Size>>
+    : never
   : never;
 
 export function makeArray<T>(): CustomArray<T, 0> {
@@ -137,18 +126,9 @@ export function popElement<T, Size extends Sizes>(
   } as PopElementReturn<typeof arr>;
 }
 
-export function getElement<
-  T,
-  N extends Sizes,
-  Size extends Sizes
->(
+export function getElement<T, N extends Sizes, Size extends Sizes>(
   n: N,
-  arr: SizeHasN<Size, N> extends true
-    ? CustomArray<T, Size>
-    : never
+  arr: SizeIsLargerThanN<Size, N> extends true ? CustomArray<T, Size> : never
 ): GetElementReturn<typeof arr, N> {
-  return arr[__type].elements[n] as GetElementReturn<
-    typeof arr,
-    N
-  >;
+  return arr[__type].elements[n] as GetElementReturn<typeof arr, N>;
 }
